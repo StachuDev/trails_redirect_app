@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Redirect to Aplikacja Drogowskaz</title>
+    <style>
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-family: Arial, sans-serif;
+        background: #f9f9f9;
+      }
+      .spinner {
+        border: 8px solid #e0e0e0;
+        border-top: 8px solid #3498db;
+        border-radius: 50%;
+        width: 80px;
+        height: 80px;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      .message {
+        text-align: center;
+        margin-top: 20px;
+      }
+      .store-buttons img {
+        width: 120px;
+        margin: 10px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="container">
+      <div id="spinner" class="spinner"></div>
+      <div id="prompt" class="message" style="display: none">
+        <p id="platform-message"></p>
+        <button id="store-button"></button>
+        <p>Nie masz aplikacji? Pobierz z:</p>
+        <div class="store-buttons">
+          <a href="https://apps.apple.com/app/idYOUR_APP_ID" target="_blank"
+            ><img
+              src="https://linkmaker.itunes.apple.com/assets/shared/badges/pl-pl/appstore-lrg.svg"
+              alt="App Store"
+          /></a>
+          <a
+            href="https://play.google.com/store/apps/details?id=YOUR_APP_PACKAGE"
+            target="_blank"
+            ><img
+              src="https://play.google.com/intl/en_us/badges/static/images/badges/pl_badge_web_generic.png"
+              alt="Google Play"
+          /></a>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        // Parse churchId from query
+        const params = new URLSearchParams(window.location.search);
+        const churchId = params.get("churchId");
+
+        // Deep link and web fallback URLs
+        const deepLink = `aplikacjadrogowskaz://trailPoint?churchId=${churchId}`;
+        const webLink = `https://aplikacjadrogowskaz.pl/trailPoint?churchId=${churchId}`;
+
+        // Detect platform
+        const ua = navigator.userAgent || navigator.vendor || window.opera;
+        const isAndroid = /android/i.test(ua);
+        const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+
+        // Attempt to open app
+        let opened = false;
+        const start = Date.now();
+
+        // Use iframe for iOS, location for Android
+        if (isIOS) {
+          const iframe = document.createElement("iframe");
+          iframe.style.display = "none";
+          iframe.src = deepLink;
+          document.body.appendChild(iframe);
+        } else if (isAndroid) {
+          window.location = deepLink;
+        } else {
+          // Not mobile, redirect to web
+          window.location = webLink;
+        }
+
+        // Fallback after timeout
+        setTimeout(() => {
+          const delta = Date.now() - start;
+          // If app didn't open (no blur or unload)
+          if (delta < 2000) {
+            // Show spinner for total 5s then prompt
+            showPrompt();
+          }
+        }, 1500);
+
+        function showPrompt() {
+          const spinner = document.getElementById("spinner");
+          const prompt = document.getElementById("prompt");
+          const messageEl = document.getElementById("platform-message");
+          const storeBtn = document.getElementById("store-button");
+
+          spinner.style.display = "block";
+          setTimeout(() => {
+            spinner.style.display = "none";
+            prompt.style.display = "block";
+            if (isIOS) {
+              messageEl.textContent = "Przejdź do aplikacji w App Store";
+              storeBtn.textContent = "Otwórz w App Store";
+              storeBtn.onclick = () =>
+                window.open(
+                  "https://apps.apple.com/app/idYOUR_APP_ID",
+                  "_blank"
+                );
+            } else if (isAndroid) {
+              messageEl.textContent = "Przejdź do aplikacji w Google Play";
+              storeBtn.textContent = "Otwórz w Google Play";
+              storeBtn.onclick = () =>
+                window.open(
+                  "https://play.google.com/store/apps/details?id=YOUR_APP_PACKAGE",
+                  "_blank"
+                );
+            } else {
+              messageEl.textContent = "Odwiedź naszą stronę";
+              storeBtn.textContent = "Otwórz stronę";
+              storeBtn.onclick = () => (window.location = webLink);
+            }
+          }, 5000);
+        }
+      })();
+    </script>
+  </body>
+</html>
